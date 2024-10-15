@@ -33,7 +33,55 @@ parser.add_argument("--num_classes", default=20, type=int)
 parser.add_argument("--ignore_index", default=-1, type=int)
 parser.add_argument("--res_dir", default="./results", type=str, help="Folder to store results")
 parser.add_argument("--dataset_folder", default="", type=str, help="Path to dataset folder")
+
+
+
+parser.add_argument("--str_conv_k", default=4, type=int)
+parser.add_argument("--str_conv_s", default=2, type=int)
+parser.add_argument("--str_conv_p", default=1, type=int)
+parser.add_argument("--agg_mode", default="att_group", type=str)
+parser.add_argument("--encoder_norm", default="group", type=str)
+parser.add_argument("--n_head", default=16, type=int)
+parser.add_argument("--d_model", default=256, type=int)
+parser.add_argument("--d_k", default=4, type=int)
+parser.add_argument("--rdm_seed", default=1, type=int, help="Random seed")
+parser.add_argument(
+    "--display_step",
+    default=50,
+    type=int,
+    help="Interval in batches between display of training metrics",
+)
+parser.add_argument(
+    "--cache",
+    dest="cache",
+    action="store_true",
+    help="If specified, the whole dataset is kept in RAM",
+)
+parser.add_argument("--mono_date", default=None, type=str)
+parser.add_argument("--ref_date", default="2018-09-01", type=str)
+parser.add_argument(
+    "--fold",
+    default=None,
+    type=int,
+    help="Do only one of the five fold (between 1 and 5)",
+)
+parser.add_argument("--pad_value", default=0, type=float)
+parser.add_argument("--padding_mode", default="reflect", type=str)
+parser.add_argument(
+    "--val_every",
+    default=1,
+    type=int,
+    help="Interval in epochs between two validation steps.",
+)
+parser.add_argument(
+    "--val_after",
+    default=0,
+    type=int,
+    help="Do validation only after that many epochs.",
+)
+
 parser.set_defaults(cache=False)
+
 
 list_args = ["encoder_widths", "decoder_widths", "out_conv"]
 
