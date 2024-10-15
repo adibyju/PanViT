@@ -4,3 +4,7 @@ numpy
 pandas
 geopandas
 torch_scatter
+transformers
+torchvision
+tqdm
+scikit-learn
