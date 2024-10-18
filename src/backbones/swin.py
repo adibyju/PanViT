@@ -10,6 +10,7 @@ class UTAE_Swin(nn.Module):
         decoder_widths=[32, 32, 64, 128],
         out_conv=[32, 20],
         swin_type="swin_tiny_patch4_window7_224",  # Type of pretrained Swin Transformer
+        img_size=(128, 128),  # Modify Swin to handle 128x128 input
         str_conv_k=4,
         str_conv_s=2,
         str_conv_p=1,
@@ -34,6 +35,7 @@ class UTAE_Swin(nn.Module):
         self.pad_value = pad_value
         self.encoder = encoder
         self.swin_type = swin_type
+        self.img_size = img_size
 
         if encoder:
             self.return_maps = True
@@ -44,8 +46,10 @@ class UTAE_Swin(nn.Module):
         else:
             decoder_widths = encoder_widths
 
-        # Spatial Encoder (Swin Transformer)
-        self.spatial_encoder = create_model(swin_type, pretrained=True, in_chans=input_dim)
+        # Spatial Encoder (Swin Transformer with modified input size for 128x128 images)
+        self.spatial_encoder = create_model(
+            swin_type, pretrained=True, in_chans=input_dim, img_size=img_size
+        )
 
         # Temporal Transformer: Reusing Swin Transformer for temporal encoding
         self.temporal_transformer = nn.Transformer(
