@@ -8,6 +8,9 @@ import pandas as pd
 import torch
 import torch.utils.data as tdata
 
+import torchvision.transforms as transforms
+
+
 
 class PASTIS_Dataset(tdata.Dataset):
     def __init__(
@@ -162,6 +165,9 @@ class PASTIS_Dataset(tdata.Dataset):
     def __getitem__(self, item):
         id_patch = self.id_patches[item]
 
+        # Define a resize transform to resize images to 224x224
+        resize_transform = transforms.Resize((224, 224))
+
         # Retrieve and prepare satellite data
         if not self.cache or item not in self.memory.keys():
             data = {
@@ -174,8 +180,11 @@ class PASTIS_Dataset(tdata.Dataset):
                 ).astype(np.float32)
                 for satellite in self.sats
             }  # T x C x H x W arrays
+
+            # Convert numpy to torch tensors
             data = {s: torch.from_numpy(a) for s, a in data.items()}
 
+            # Normalize the data if norm is specified
             if self.norm is not None:
                 data = {
                     s: (d - self.norm[s][0][None, :, None, None])
@@ -183,6 +192,13 @@ class PASTIS_Dataset(tdata.Dataset):
                     for s, d in data.items()
                 }
 
+            # Resize the images using the defined resize transform
+            data = {
+                s: torch.stack([resize_transform(img) for img in d])
+                for s, d in data.items()
+            }
+
+            # Load the target data for 'semantic' or 'instance'
             if self.target == "semantic":
                 target = np.load(
                     os.path.join(
@@ -297,6 +313,7 @@ class PASTIS_Dataset(tdata.Dataset):
             dates = dates[self.sats[0]]
 
         return (data, dates), target
+
 
 
 def prepare_dates(date_dict, reference_date):

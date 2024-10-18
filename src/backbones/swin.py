@@ -10,7 +10,6 @@ class UTAE_Swin(nn.Module):
         decoder_widths=[32, 32, 64, 128],
         out_conv=[32, 20],
         swin_type="swin_tiny_patch4_window7_224",  # Type of pretrained Swin Transformer
-        img_size=(128, 128),  # Modify Swin to handle 128x128 input
         str_conv_k=4,
         str_conv_s=2,
         str_conv_p=1,
@@ -35,7 +34,6 @@ class UTAE_Swin(nn.Module):
         self.pad_value = pad_value
         self.encoder = encoder
         self.swin_type = swin_type
-        self.img_size = img_size
 
         if encoder:
             self.return_maps = True
@@ -46,10 +44,8 @@ class UTAE_Swin(nn.Module):
         else:
             decoder_widths = encoder_widths
 
-        # Spatial Encoder (Swin Transformer with modified input size for 128x128 images)
-        self.spatial_encoder = create_model(
-            swin_type, pretrained=True, in_chans=input_dim, img_size=img_size
-        )
+        # Spatial Encoder (Swin Transformer)
+        self.spatial_encoder = create_model(swin_type, pretrained=True, in_chans=input_dim)
 
         # Temporal Transformer: Reusing Swin Transformer for temporal encoding
         self.temporal_transformer = nn.Transformer(
@@ -79,17 +75,13 @@ class UTAE_Swin(nn.Module):
         b, t, c, h, w = input.shape
         input = input.view(b * t, c, h, w)  # Flatten temporal dimension for spatial encoder
 
-        # Pass through the Swin Transformer
-        spatial_features = self.spatial_encoder(input)  # Output is [B*T, num_patches * embed_dim] or [B*T, C, H, W]
+        spatial_features = self.spatial_encoder(input)
+        spatial_features = spatial_features.view(b, t, -1, h // 32, w // 32)  # Reshape back
 
-        # If the spatial output is already reduced to 1x1 spatial dimension, no further reshaping is needed
-        if spatial_features.dim() == 2:  # Likely flattened to [B*T, embed_dim]
-            spatial_features = spatial_features.view(b * t, self.spatial_encoder.num_features, 1, 1)  # Reshape to [B*T, C, 1, 1]
-
-        # Handle temporal transformer if needed (flattening and reshaping)
+        # TEMPORAL TRANSFORMER
         temporal_features = self.temporal_transformer(spatial_features.flatten(2), spatial_features.flatten(2))
 
-        temporal_features = temporal_features.view(b, t, -1, 1, 1)  # Reshape back to [B, T, C, 1, 1] as there are no spatial dimensions left
+        temporal_features = temporal_features.view(b, t, -1, h // 32, w // 32)  # Reshape back
 
         # DECODER (same U-Net style decoder)
         out = temporal_features[:, -1]  # Use the last time step
@@ -104,6 +96,9 @@ class UTAE_Swin(nn.Module):
         if return_att:
             return out, maps
         return out
+
+# Helper classes (ConvBlock, UpConvBlock) remain the same
+
 
 
 
