@@ -80,13 +80,15 @@ class UTAE_Swin(nn.Module):
         input = input.view(b * t, c, h, w)  # Flatten temporal dimension for spatial encoder
 
         # Pass through the Swin Transformer
-        spatial_features = self.spatial_encoder(input)  # [B*T, C, H', W'] after Swin
-        
-        # Get the output dimensions of the spatial features
-        _, c_swin, h_swin, w_swin = spatial_features.shape  # The dimensions after Swin
+        spatial_features = self.spatial_encoder(input)  # [B*T, num_patches, embed_dim]
 
-        # Reshape the output back to include the temporal dimension
-        spatial_features = spatial_features.view(b, t, c_swin, h_swin, w_swin)  # Reshape back to [B, T, C, H', W']
+        # Recompute the spatial dimensions from the number of patches
+        num_patches = spatial_features.shape[1]  # This is the number of patches
+        h_swin = w_swin = int(num_patches ** 0.5)  # Assuming square patches (h_swin = w_swin)
+
+        # Reshape the output to recover the spatial dimensions
+        spatial_features = spatial_features.permute(0, 2, 1)  # [B*T, embed_dim, num_patches]
+        spatial_features = spatial_features.view(b, t, -1, h_swin, w_swin)  # Reshape back to [B, T, C, H', W']
 
         # TEMPORAL TRANSFORMER
         temporal_features = self.temporal_transformer(spatial_features.flatten(2), spatial_features.flatten(2))
@@ -106,6 +108,7 @@ class UTAE_Swin(nn.Module):
         if return_att:
             return out, maps
         return out
+
 
 
 
