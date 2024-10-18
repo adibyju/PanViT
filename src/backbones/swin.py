@@ -79,13 +79,19 @@ class UTAE_Swin(nn.Module):
         b, t, c, h, w = input.shape
         input = input.view(b * t, c, h, w)  # Flatten temporal dimension for spatial encoder
 
-        spatial_features = self.spatial_encoder(input)
-        spatial_features = spatial_features.view(b, t, -1, h // 32, w // 32)  # Reshape back
+        # Pass through the Swin Transformer
+        spatial_features = self.spatial_encoder(input)  # [B*T, C, H', W'] after Swin
+        
+        # Get the output dimensions of the spatial features
+        _, c_swin, h_swin, w_swin = spatial_features.shape  # The dimensions after Swin
+
+        # Reshape the output back to include the temporal dimension
+        spatial_features = spatial_features.view(b, t, c_swin, h_swin, w_swin)  # Reshape back to [B, T, C, H', W']
 
         # TEMPORAL TRANSFORMER
         temporal_features = self.temporal_transformer(spatial_features.flatten(2), spatial_features.flatten(2))
 
-        temporal_features = temporal_features.view(b, t, -1, h // 32, w // 32)  # Reshape back
+        temporal_features = temporal_features.view(b, t, -1, h_swin, w_swin)  # Reshape back
 
         # DECODER (same U-Net style decoder)
         out = temporal_features[:, -1]  # Use the last time step
@@ -100,6 +106,7 @@ class UTAE_Swin(nn.Module):
         if return_att:
             return out, maps
         return out
+
 
 
 class TemporallySharedBlock(nn.Module):
