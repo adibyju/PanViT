@@ -1,10 +1,30 @@
-from src.backbones import utae, unet3d, convlstm, convgru, fpn
+from src.backbones import swin, utae, unet3d, convlstm, convgru, fpn
 from src.panoptic import paps
 
 
 def get_model(config, mode="semantic"):
     if mode == "semantic":
-        if config.model == "utae":
+        if config.model == "swin":
+            model = swin.UTAE_Swin(
+                input_dim=10,
+                encoder_widths=config.encoder_widths,
+                decoder_widths=config.decoder_widths,
+                out_conv=config.out_conv,
+                swin_type="swin_tiny_patch4_window7_224",
+                str_conv_k=config.str_conv_k,
+                str_conv_s=config.str_conv_s,
+                str_conv_p=config.str_conv_p,
+                agg_mode=config.agg_mode,
+                encoder_norm=config.encoder_norm,
+                n_head=config.n_head,
+                d_model=config.d_model,
+                d_k=config.d_k,
+                encoder=False,
+                return_maps=False,
+                pad_value=config.pad_value,
+                padding_mode=config.padding_mode,
+            )
+        elif config.model == "utae":
             model = utae.UTAE(
                 input_dim=10,
                 encoder_widths=config.encoder_widths,
@@ -91,7 +111,27 @@ def get_model(config, mode="semantic"):
             )
         return model
     elif mode == "panoptic":
-        if config.backbone == "utae":
+        if config.backbone == "swin":
+            model = swin.UTAE_Swin(
+                input_dim=10,
+                encoder_widths=config.encoder_widths,
+                decoder_widths=config.decoder_widths,
+                out_conv=config.out_conv,
+                swin_type="swin_tiny_patch4_window7_224",
+                str_conv_k=config.str_conv_k,
+                str_conv_s=config.str_conv_s,
+                str_conv_p=config.str_conv_p,
+                agg_mode=config.agg_mode,
+                encoder_norm=config.encoder_norm,
+                n_head=config.n_head,
+                d_model=config.d_model,
+                d_k=config.d_k,
+                encoder=True,
+                return_maps=False,
+                pad_value=config.pad_value,
+                padding_mode=config.padding_mode,
+            )
+        elif config.backbone == "utae":
             model = utae.UTAE(
                 input_dim=10,
                 encoder_widths=config.encoder_widths,

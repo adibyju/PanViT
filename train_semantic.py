@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser()
 # Model parameters
 parser.add_argument(
     "--model",
-    default="utae",
+    default="swin",
     type=str,
     help="Type of architecture to use. Can be one of: (utae/unet3d/fpn/convlstm/convgru/uconvlstm/buconvlstm)",
 )
