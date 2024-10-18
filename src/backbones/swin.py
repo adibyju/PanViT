@@ -80,20 +80,21 @@ class UTAE_Swin(nn.Module):
         input = input.view(b * t, c, h, w)  # Flatten temporal dimension for spatial encoder
 
         # Pass through the Swin Transformer
-        spatial_features = self.spatial_encoder(input)  # [B*T, num_patches, embed_dim]
+        spatial_features = self.spatial_encoder(input)  # Output could be [B*T, num_patches, embed_dim] or [B*T, num_patches * embed_dim]
 
-        # Recompute the spatial dimensions from the number of patches
-        num_patches = spatial_features.shape[1]  # This is the number of patches
-        h_swin = w_swin = int(num_patches ** 0.5)  # Assuming square patches (h_swin = w_swin)
-
-        # Reshape the output to recover the spatial dimensions
-        spatial_features = spatial_features.permute(0, 2, 1)  # [B*T, embed_dim, num_patches]
-        spatial_features = spatial_features.view(b, t, -1, h_swin, w_swin)  # Reshape back to [B, T, C, H', W']
+        # Check if the output is 2D or 3D and handle accordingly
+        if len(spatial_features.shape) == 2:  # If output is 2D
+            num_patches = int((spatial_features.shape[1] // self.spatial_encoder.num_features) ** 0.5)
+            spatial_features = spatial_features.view(b * t, self.spatial_encoder.num_features, num_patches, num_patches)  # Reshape to [B*T, C, H, W]
+        elif len(spatial_features.shape) == 3:  # If output is 3D
+            spatial_features = spatial_features.permute(0, 2, 1)  # [B*T, embed_dim, num_patches]
+            num_patches = int(spatial_features.shape[2] ** 0.5)  # Calculate patch size
+            spatial_features = spatial_features.view(b, t, -1, num_patches, num_patches)  # Reshape back to [B, T, C, H', W']
 
         # TEMPORAL TRANSFORMER
         temporal_features = self.temporal_transformer(spatial_features.flatten(2), spatial_features.flatten(2))
 
-        temporal_features = temporal_features.view(b, t, -1, h_swin, w_swin)  # Reshape back
+        temporal_features = temporal_features.view(b, t, -1, num_patches, num_patches)  # Reshape back
 
         # DECODER (same U-Net style decoder)
         out = temporal_features[:, -1]  # Use the last time step
@@ -108,6 +109,7 @@ class UTAE_Swin(nn.Module):
         if return_att:
             return out, maps
         return out
+
 
 
 
